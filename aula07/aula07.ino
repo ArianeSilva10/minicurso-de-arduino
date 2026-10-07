@@ -13,7 +13,6 @@ constexpr int kTensorArenaSize = 8*1024;
 alignas(16) uint8_t tensor_arena[kTensorArenaSize];
 
 void setup() {
-
   Serial.begin(115200);
   delay(1000);
 
@@ -39,76 +38,51 @@ void setup() {
   Serial.println(" bytes");
 
   Serial.println();
-  Serial.println("Executando teste TinyML...");
+  Serial.println("Aguardando entrada de dados. Digite um numero no terminal...");
 }
 
 void loop() {
+  // Verifica se há dados disponíveis no monitor serial
+  if (Serial.available() > 0) {
+    
+    // Lê o número em formato float enviado pelo terminal
+    float entrada = Serial.parseFloat();
 
-  // Teste 1: valor que deve pertencer à classe 0
-  float entrada = 0.2;
+    // Limpa o buffer do terminal para evitar leitura de 'Enter' (\n ou \r)
+    while (Serial.available() > 0) {
+      Serial.read();
+    }
 
-  modelSetInput(entrada, 0);
+    Serial.println("\n---------------------------------");
+    Serial.print("Entrada recebida: ");
+    Serial.println(entrada);
 
-  if (!modelRunInference()) {
-    Serial.println("ERRO: falha na inferencia!");
-    return;
+    // Passa o valor recebido para o modelo
+    modelSetInput(entrada, 0);
+
+    // Executa a inferência
+    if (!modelRunInference()) {
+      Serial.println("ERRO: falha na inferencia!");
+      return;
+    }
+
+    // Obtém o resultado da predição
+    float resultado = modelGetOutput(0);
+
+    Serial.print("Saida do modelo: ");
+    Serial.println(resultado, 4);
+
+    // Avalia o resultado e controla os LEDs
+    if (resultado < 0.5) {
+      Serial.println("Classe 0 -> LED VERDE");
+      digitalWrite(LED_VERDE, HIGH);
+      digitalWrite(LED_VERMELHO, LOW);
+    } else {
+      Serial.println("Classe 1 -> LED VERMELHO");
+      digitalWrite(LED_VERDE, LOW);
+      digitalWrite(LED_VERMELHO, HIGH);
+    }
+    
+    Serial.println("Aguardando novo numero...");
   }
-
-  float resultado = modelGetOutput(0);
-
-  Serial.print("Entrada: ");
-  Serial.print(entrada);
-  Serial.print(" | Saida: ");
-  Serial.println(resultado, 4);
-
-  if (resultado < 0.5) {
-
-    Serial.println("Classe 0 -> LED VERDE");
-
-    digitalWrite(LED_VERDE, HIGH);
-    digitalWrite(LED_VERMELHO, LOW);
-
-  } else {
-
-    Serial.println("Classe 1 -> LED VERMELHO");
-
-    digitalWrite(LED_VERDE, LOW);
-    digitalWrite(LED_VERMELHO, HIGH);
-  }
-
-  delay(3000);
-
-  // Teste 2: valor que deve pertencer à classe 1
-  entrada = 0.7;
-
-  modelSetInput(entrada, 0);
-
-  if (!modelRunInference()) {
-    Serial.println("ERRO: falha na inferencia!");
-    return;
-  }
-
-  resultado = modelGetOutput(0);
-
-  Serial.print("Entrada: ");
-  Serial.print(entrada);
-  Serial.print(" | Saida: ");
-  Serial.println(resultado, 4);
-
-  if (resultado < 0.5) {
-
-    Serial.println("Classe 0 -> LED VERDE");
-
-    digitalWrite(LED_VERDE, HIGH);
-    digitalWrite(LED_VERMELHO, LOW);
-
-  } else {
-
-    Serial.println("Classe 1 -> LED VERMELHO");
-
-    digitalWrite(LED_VERDE, LOW);
-    digitalWrite(LED_VERMELHO, HIGH);
-  }
-
-  delay(3000);
 }
